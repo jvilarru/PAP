@@ -2,6 +2,10 @@
 <configurationDescriptor version="84">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <df name="PAP" root=".">
+      <df name=".git">
+        <df name="info">
+        </df>
+      </df>
       <in>cycle.h</in>
       <in>dotprod-basic.c</in>
       <in>dotprod.c</in>
@@ -32,7 +36,7 @@
           <buildCommandWorkingDir>.</buildCommandWorkingDir>
           <buildCommand>${MAKE} -f Makefile</buildCommand>
           <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
-          <executablePath></executablePath>
+          <executablePath>dotprod</executablePath>
           <cTool>
             <incDir>
               <pElem>.</pElem>
