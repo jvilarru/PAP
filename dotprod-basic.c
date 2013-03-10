@@ -1,152 +1,124 @@
-/*****************************************************************************
- * * FILE: dotprod-basic.c
- * ******************************************************************************/
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <cycle.h>
-/*   
- *   The following structure contains the necessary information  
- *   to allow the function "dotprod" to access its input data and 
- *   place its output into the structure.  This structure is 
- *   unchanged from the sequential version.
- *   */
 
-typedef struct 
- {
-   double      *a;
-   double      *b;
-   double     sum; 
-   int     veclen; 
- } DOTDATA;
+typedef struct {
+    double *a;
+    double *b;
+    double sum;
+    int veclen;
+} DOTDATA;
 
-/* Define globally accessible variables and a mutex */
+typedef struct {
+    int n;
+    int i;
+} params;
 
 int NUMTHRDS;
 int VECLEN;
-   DOTDATA dotstr; 
-   pthread_t *callThd;
-   pthread_mutex_t mutexsum;
+DOTDATA dotstr;
+pthread_t *callThd;
+pthread_mutex_t mutexsum;
 
-/*
- * The function dotprod is activated when the thread is created.
- * As before, all input to this routine is obtained from a structure 
- * of type DOTDATA and all output from this function is written into
- * this structure. The benefit of this approach is apparent for the 
- * multi-threaded program: when a thread is created we pass a single
- * argument to the activated function - typically this argument
- * is a thread number. All  the other information required by the 
- * function is accessed from the globally accessible structure. 
- * */
+void *dotprod(void *arg) {
 
-void *dotprod(void *arg)
-{
+    int i, start, end, len, n;
+    long offset;
+    double mysum, *x, *y;
+    void *status;
+    offset = ((params*) arg)->i;
+    n = ((params*) arg)->n;
+    pthread_attr_t attr;
+    params *p;
 
-/* Define and use local variables for convenience */
-
-   int i, start, end, len ;
-   long offset;
-   double mysum, *x, *y;
-   offset = (long)arg;
-     
-   len = dotstr.veclen;
-   start = offset*len;
-   end   = start + len;
-   x = dotstr.a;
-   y = dotstr.b;
-
-/*
- * Perform the dot product and assign result
- * to the appropriate variable in the structure. 
- * */
-
-   for (i=start; i<end ; i++) 
-    {
-        mysum = (x[i] * y[i]);
-/*
- * Lock a mutex prior to updating the value in the shared
- * structure, and unlock it upon updating.
- * */
-	pthread_mutex_lock (&mutexsum);
-	dotstr.sum += mysum;
-	pthread_mutex_unlock (&mutexsum);
+    while (n > 1) {
+        p->n = n / 2;
+        p->i = ((params*) arg)->i + p->n;
+        if (n % 2 == 1)p->n++;
+        n /= 2;
+        pthread_attr_init(&attr);
+        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+        pthread_create(&callThd[p->i], &attr, dotprod, (void *) p);
     }
 
-   pthread_exit((void*) 0);
+    pthread_attr_destroy(&attr);
+
+    len = dotstr.veclen;
+    start = offset*len;
+    end = start + len;
+    x = dotstr.a;
+    y = dotstr.b;
+
+
+    for (i = start; i < end; i++) {
+        pthread_mutex_lock(&mutexsum);
+        dotstr.sum += (x[i] * y[i]);
+        pthread_mutex_unlock(&mutexsum);
+    }
+    int j=offset + 1;
+    while (n < ((params*) arg)->n) {
+        pthread_join(callThd[j], &status);
+    }
+
+    pthread_exit((void*) 0);
 }
 
-/* 
- * The main program creates threads which do all the work and then 
- * print out result upon completion. Before creating the threads,
- * The input data is created. Since all threads update a shared structure,
- * we
- * need a mutex for mutual exclusion. The main thread needs to wait for
- * all threads to complete, it waits for each one of the threads. We
- * specify
- * a thread attribute value that allow the main thread to join with the
- * threads it creates. Note also that we free up handles  when they are
- * no longer needed.
- * */
+int main(int argc, char *argv[]) {
+    long i;
+    double *a, *b;
+    void *status;
+    pthread_attr_t attr;
 
-double convert(ticks t){
-    return ((double)t)/((double)1000.0);
+    if (argc != 3) {
+        printf("Usage: ./dotprod-basic NUMTHREADS TAMANY_PROBLEMA");
+        return 0;
+    }
+
+    NUMTHRDS = atoi(argv[1]);
+    VECLEN = atoi(argv[2]);
+
+    callThd = (pthread_t*) malloc(NUMTHRDS * sizeof (pthread_t));
+    a = (double*) malloc(NUMTHRDS * VECLEN * sizeof (double));
+    b = (double*) malloc(NUMTHRDS * VECLEN * sizeof (double));
+
+    for (i = 0; i < VECLEN * NUMTHRDS; i++) {
+        a[i] = 1;
+        b[i] = a[i];
+    }
+
+    dotstr.veclen = VECLEN;
+    dotstr.a = a;
+    dotstr.b = b;
+    dotstr.sum = 0;
+
+    pthread_mutex_init(&mutexsum, NULL);
+
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+    params *p;
+    int n = NUMTHRDS;
+    while (n > 1) {
+        p->n = n / 2;
+        p->i = n;
+        if (n % 2 == 1)p->n++;
+        n /= 2;
+        pthread_attr_init(&attr);
+        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+        pthread_create(&callThd[p->i], &attr, dotprod, (void *) p);
+    }
+
+    pthread_attr_destroy(&attr);
+
+    for (i = 0; i < NUMTHRDS; i++) {
+        pthread_join(callThd[i], &status);
+    }
+
+    printf("Sum =  %f \n", dotstr.sum);
+    free(a);
+    free(b);
+    pthread_mutex_destroy(&mutexsum);
+    pthread_exit(NULL);
 }
-
-int main (int argc, char *argv[])
-{
-long i;
-double *a, *b;
-void *status;
-pthread_attr_t attr;
-ticks t = getticks();
-if(argc != 3){
-    printf("Usage: ./dotprod-basic NUMTHREADS TAMANY_PROBLEMA");
-    return 0;
-}
-NUMTHRDS = atoi(argv[1]);
-VECLEN = atoi(argv[2]);
-callThd = (pthread_t*) malloc(NUMTHRDS*sizeof(pthread_t));
-/* Assign storage and initialize values */
-a = (double*) malloc (NUMTHRDS*VECLEN*sizeof(double));
-b = (double*) malloc (NUMTHRDS*VECLEN*sizeof(double));
-  
-for (i=0; i<VECLEN*NUMTHRDS; i++) {
-  a[i]=1;
-  b[i]=a[i];
-  }
-
-dotstr.veclen = VECLEN; 
-dotstr.a = a; 
-dotstr.b = b; 
-dotstr.sum=0;
-
-pthread_mutex_init(&mutexsum, NULL);
-         
-/* Create threads to perform the dotproduct  */
-pthread_attr_init(&attr);
-pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-
-for(i=0;i<NUMTHRDS;i++)
-  {
-  /* Each thread works on a different set of data.
- *    * The offset is specified by 'i'. The size of
- *       * the data for each thread is indicated by VECLEN.
- *          */
-   pthread_create(&callThd[i], &attr, dotprod, (void *)i); 
-   }
-
-pthread_attr_destroy(&attr);
-/* Wait on the other threads */
-
-for(i=0;i<NUMTHRDS;i++) {
-  pthread_join(callThd[i], &status);
-  }
-/* After joining, print out the results and cleanup */
-
-printf ("Sum =  %f \nTemps = %f", dotstr.sum,convert(elapsed(getticks(),t)));
-free (a);
-free (b);
-pthread_mutex_destroy(&mutexsum);
-pthread_exit(NULL);
-}   
 
