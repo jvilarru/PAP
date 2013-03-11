@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="84">
+<configurationDescriptor version="88">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
-    <df name="PAP" root=".">
-      <df name=".git">
-        <df name="info">
-        </df>
-      </df>
+    <df root="." name="PAP">
       <in>cycle.h</in>
       <in>dotprod-basic.c</in>
       <in>dotprod.c</in>
@@ -44,6 +40,14 @@
           </cTool>
         </makeTool>
       </makefileType>
+      <item path="cycle.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="dotprod-basic.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="dotprod.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="matmul.c" ex="false" tool="0" flavor2="0">
+      </item>
     </conf>
   </confs>
 </configurationDescriptor>

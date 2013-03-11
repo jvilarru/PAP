@@ -31,14 +31,14 @@ void *dotprod(void *arg) {
     n = ((params*) arg)->n;
     pthread_attr_t attr;
     params *p;
-
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    
     while (n > 1) {
         p->n = n / 2;
         p->i = ((params*) arg)->i + p->n;
         if (n % 2 == 1)p->n++;
         n /= 2;
-        pthread_attr_init(&attr);
-        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
         pthread_create(&callThd[p->i], &attr, dotprod, (void *) p);
     }
 
@@ -56,9 +56,9 @@ void *dotprod(void *arg) {
         dotstr.sum += (x[i] * y[i]);
         pthread_mutex_unlock(&mutexsum);
     }
-    int j=offset + 1;
     while (n < ((params*) arg)->n) {
-        pthread_join(callThd[j], &status);
+        pthread_join(callThd[offset+n], &status);
+        n*=2;
     }
 
     pthread_exit((void*) 0);
@@ -104,14 +104,12 @@ int main(int argc, char *argv[]) {
         p->i = n;
         if (n % 2 == 1)p->n++;
         n /= 2;
-        pthread_attr_init(&attr);
-        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
         pthread_create(&callThd[p->i], &attr, dotprod, (void *) p);
     }
 
     pthread_attr_destroy(&attr);
 
-    for (i = 0; i < NUMTHRDS; i++) {
+    for (i = 1; i < NUMTHRDS; i++) {
         pthread_join(callThd[i], &status);
     }
 
