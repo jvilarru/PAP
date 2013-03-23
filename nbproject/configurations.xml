@@ -2,9 +2,25 @@
 <configurationDescriptor version="84">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <df name="PAP" root=".">
-      <df name=".git">
-        <df name="info">
-        </df>
+      <df name="RNA">
+        <in>1D64.pdb</in>
+        <in>RNA</in>
+        <in>RNA.c</in>
+        <in>RNA2</in>
+        <in>RNA2.c</in>
+        <in>RNA3</in>
+        <in>RNA3.c</in>
+        <in>prova.ann</in>
+        <in>prova.in</in>
+        <in>prova.out</in>
+        <in>prova2.in</in>
+        <in>prova2.out</in>
+        <in>prova3.in</in>
+        <in>prova3.out</in>
+        <in>scriptv.sh</in>
+        <in>scriptv2.sh</in>
+        <in>scriptv3.sh</in>
+        <in>scriptva.sh</in>
       </df>
       <in>cycle.h</in>
       <in>dotprod-basic.c</in>
