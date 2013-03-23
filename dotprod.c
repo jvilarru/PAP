@@ -11,11 +11,6 @@ typedef struct {
     int veclen;
 } DOTDATA;
 
-typedef struct {
-    int i;
-    int n;
-} params;
-
 int NUMTHRDS;
 int VECLEN;
 DOTDATA dotstr;
@@ -32,7 +27,7 @@ void *dotprod(void *arg) {
     long offset;
     double mysum, *x, *y;
 
-    offset = ((params*)arg)->i;
+    offset = (long)arg;
     len = dotstr.veclen;
     start = offset*len;
     end = start + len;
@@ -90,7 +85,7 @@ int main(int argc, char *argv[]) {
     ticks t1 = getticks();
     int n = NUMTHRDS;
     for (i = 0; i < NUMTHRDS; i++) {
-        pthread_create(&callThd[i], &attr, dotprod,i,n/2);
+        pthread_create(&callThd[i], &attr, dotprod,(void *)i);
     }
 
     pthread_attr_destroy(&attr);
